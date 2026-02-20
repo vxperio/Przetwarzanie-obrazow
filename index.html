@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Przetwarzanie obrazów </title>
+
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+</head>
+
+<body>
+  <!-- HEADER -->
+ <header class="topbar">
+
+  <div class="top-left"> 
+    <div class="select-wrap">
+      <select id="sectionSelect">
+        <option value="load">Wczytywanie</option>
+        <option value="point">Operacje punktowe</option>
+        <option value="two">Operacje na 2 obrazach</option>
+        <option value="filters">Filtracja</option>
+        <option value="edges">Krawędzie</option>
+        <option value="morph">Morfologia</option>
+      </select>
+    </div>
+
+    <button id="globalResetBtn" class="icon-btn" type="button" title="Reset">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 4v6h-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <button id="downloadResultBtn" class="icon-btn" type="button" title="Pobierz wynik (po edycji)">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3v12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 11l4 4 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 20h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="top-center">
+    <div class="brand">Przetwarzanie obrazów </div>
+  </div>
+
+  <div class="top-right"></div>
+
+</header>
+
+
+  <main class="layout">
+    <!-- LEWY PANEL -->
+    <aside class="panel">
+
+      <!-- WCZYTYWANIE -->
+      <section class="card" data-section="load">
+        <h2> Wczytaj obraz A</h2>
+
+        <div class="file-row">
+          <input id="file1" class="file-input" type="file" accept="image/*" />
+          <label for="file1" class="file-btn">Wybierz plik</label>
+          <span class="file-name" id="file1Name">Nie wybrano pliku</span>
+        </div>
+
+        <div class="row">
+          <label class="small">
+            Maks. szerokość (px)
+            <input id="maxW" type="number" min="64" max="2048" value="420" step="1" data-no-stepper />
+          </label>
+        </div>
+
+        <p class="muted small">Obraz będzie automatycznie skalowany (dla szybkości).</p>
+      </section>
+
+      <section class="card" data-section="load" >
+        <h2> Wczytaj obraz B</h2>
+
+        <div class="file-row">
+          <input id="file2" class="file-input" type="file" accept="image/*" />
+          <label for="file2" class="file-btn">Wybierz plik</label>
+          <span class="file-name" id="file2Name">Nie wybrano pliku</span>
+        </div>
+
+        <p class="muted small">Drugi obraz zostanie przeskalowany do rozmiaru obrazu A.</p>
+      </section>
+
+      <!-- HISTOGRAM -->
+      <section class="card" data-section="load">
+        <h2>Histogram</h2>
+
+        <div class="row">
+          <label>
+            Tryb:
+            <select id="histMode">
+              <option value="gray">Gray</option>
+              <option value="r">R</option>
+              <option value="g">G</option>
+              <option value="b">B</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="checkbox">
+          <input id="histFromResult" type="checkbox" checked />
+          licz Gray z obrazu wynikowego
+        </label>
+
+        <hr class="sep" />
+
+        <h2>Info</h2>
+        <div id="info" class="muted small">Brak obrazu.</div>
+      </section>
+
+      <!-- PUNKTOWE -->
+      <section class="card" data-section="point">
+        <h2>3) Operacje punktowe (Gray)</h2>
+
+        <div class="row">
+          <label>
+            Operacja:
+            <select id="opSelect">
+              <option value="clamp">Clamp (przycięcie)</option>
+              <option value="brightness">Jasność</option>
+              <option value="contrast">Kontrast</option>
+              <option value="negative">Negatyw</option>
+              <option value="threshold">Progowanie</option>
+              <option value="gamma">Gamma</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label class="small">
+            A
+            <input id="A" type="number" step="0.1" value="20" data-no-stepper />
+          </label>
+          <label class="small">
+            B
+            <input id="B" type="number" step="0.1" value="230" data-no-stepper />
+          </label>
+        </div>
+
+        <p class="muted small">
+          • Clamp: A=low, B=high<br/>
+          • Jasność: A=delta<br/>
+          • Kontrast: A=kontrast (np. 1.2)<br/>
+          • Progowanie: A=próg (0..255)<br/>
+          • Gamma: A=gamma (np. 2.2)
+        </p>
+
+        <div class="row actions">
+          <button id="applyBtn">Zastosuj</button>
+        </div>
+      </section>
+
+
+      <!-- 2 OBRAZY -->
+      <section class="card" data-section="two">
+        <h2>4) Operacje na dwóch obrazach (Gray)</h2>
+
+        <div class="row">
+          <label>
+            Operacja:
+            <select id="op2Select">
+              <option value="add">Dodawanie (A+B)</option>
+              <option value="avg">Średnia ((A+B)/2)</option>
+              <option value="diff">Różnica (|A-B|)</option>
+              <option value="div">Dzielenie (A / B)</option>
+              <option value="max">Maksimum (max)</option>
+              <option value="min">Minimum (min)</option>
+              <option value="mul">Mnożenie (A*B/255)</option>
+              <option value="sub">Odejmowanie (A-B)</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="checkbox">
+          <input id="op2UseResultAsA" type="checkbox" checked />
+          użyj obrazu wynikowego jako A
+        </label>
+
+        <div class="row actions">
+          <button id="apply2Btn">Zastosuj (2 obrazy)</button>
+        </div>
+
+        <p class="muted small">A = (oryginał lub wynik), B = drugi obraz.</p>
+      </section>
+
+      <!-- FILTRY -->
+      <section class="card" data-section="filters">
+        <h2>5) Filtracja (Gray)</h2>
+
+        <h3 class="sub">Liniowa (konwolucja)</h3>
+
+        <div class="row">
+          <label>
+            Rozmiar maski:
+            <select id="maskSize">
+              <option value="3">3×3</option>
+              <option value="5">5×5</option>
+              <option value="7">7×7</option>
+            </select>
+          </label>
+
+          <label class="checkbox inline" style="margin-top:22px;">
+            <input id="normalizeMask" type="checkbox" checked />
+            normalizuj
+          </label>
+        </div>
+
+        <div class="row">
+          <button id="presetBlur" class="secondary">Blur</button>
+          <button id="presetSharpen" class="secondary">Sharpen</button>
+          <button id="presetEdge" class="secondary">Edge</button>
+          <button id="presetIdentity" class="secondary">Identity</button>
+        </div>
+
+        <div id="maskGrid" class="mask-grid"></div>
+
+        <div class="row actions">
+          <button id="applyConvBtn">Zastosuj konwolucję</button>
+        </div>
+
+        <hr class="sep" />
+
+        <h3 class="sub">Nieliniowa</h3>
+
+        <div class="row">
+          <label>
+            Filtr:
+            <select id="nlSelect">
+              <option value="min">Minimum</option>
+              <option value="max">Maksimum</option>
+              <option value="median">Mediana</option>
+              <option value="wmedian">Ważona mediana</option>
+            </select>
+          </label>
+
+          <label>
+            Okno:
+            <select id="nlSize">
+              <option value="3">3×3</option>
+              <option value="5">5×5</option>
+              <option value="7">7×7</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row actions">
+          <button id="applyNlBtn">Zastosuj filtr nieliniowy</button>
+        </div>
+      </section>
+        <!-- KRAWEDZIE -->
+            <section class="card" data-section="edges">
+        <h2>6) Wykrywanie krawędzi</h2>
+
+        <div class="row">
+          <label>
+            Operator:
+            <select id="edgeSelect">
+              <option value="sobel">Sobel</option>
+              <option value="prewitt">Prewitt</option>
+              <option value="roberts">Roberts</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row actions">
+          <button id="applyEdgeBtn">Wykryj krawędzie</button>
+        </div>
+      </section>
+      
+      <section class="card" data-section="morph">
+        <h2>7) Morfologia (binarny)</h2>
+
+        <div class="row">
+          <label>
+            Operacja:
+            <select id="morphSelect">
+              <option value="erode">Erozja</option>
+              <option value="dilate">Dylatacja</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row actions">
+          <button id="applyMorphBtn">Zastosuj</button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- WORKSPACE (canvas) -->
+    <section class="workspace">
+      <div class="canvas-wrap">
+        <div id="p5mount"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- JS -->
+  <script src="js/imageOps.js"></script>
+  <script src="js/twoImages.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/edges.js"></script>
+  <script src="js/morphology.js"></script>
+  <script src="js/sketch.js"></script>
+  
+</body>
+</html>
